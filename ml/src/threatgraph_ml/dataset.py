@@ -33,10 +33,12 @@ def load_dataset(refresh: bool = False) -> pd.DataFrame:
 
     frame = frame.dropna(subset=["URL", "Label"]).copy()
     frame["URL"] = frame["URL"].astype(str)
-    frame["Label"] = pd.to_numeric(frame["Label"], errors="raise").astype(int)
+    frame["Label"] = pd.to_numeric(frame["Label"], errors="raise")
     unexpected = set(frame["Label"].unique()).difference({0, 1})
     if unexpected:
         raise ValueError(f"Unexpected UCI labels: {sorted(unexpected)}")
+
+    frame["Label"] = frame["Label"].astype(int)
 
     # UCI's encoding is 0=phishing, 1=legitimate. ThreatGraph's internal
     # convention is positive class 1=phishing.
