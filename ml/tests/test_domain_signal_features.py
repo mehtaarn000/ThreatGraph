@@ -63,3 +63,16 @@ def test_similarity_retains_subdomains_and_suffix_boundaries(host, official_flag
     assert 0 < result["official_domain_edit_similarity"] < 1
     assert 0 < result["official_domain_bigram_dice"] < 1
     assert result["official_brand_domain_or_subdomain"] == official_flag
+
+
+@pytest.mark.parametrize("candidate, official", [
+    ("", ""), ("", "acme.test"), ("acme.test", ""), (None, None),
+    ("https:///missing-host", "acme.test"),
+])
+def test_missing_hosts_have_finite_features_and_zero_similarity(candidate, official):
+    result = extract_brand_features(candidate, "Acme", official)
+    assert len(result) == 23
+    assert set(NEW_FEATURE_NAMES).issubset(result)
+    assert all(math.isfinite(value) for value in result.values())
+    assert result["official_domain_edit_similarity"] == 0
+    assert result["official_domain_bigram_dice"] == 0
