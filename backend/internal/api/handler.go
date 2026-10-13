@@ -19,6 +19,7 @@ const maxRequestBytes = 16 * 1024
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 type Handler struct {
+	dns    DNSService
 	scorer Scorer
 	repo   Repository
 	logger *slog.Logger
@@ -37,6 +38,12 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("GET /readyz", h.ready)
 	mux.HandleFunc("POST /v1/analyses", h.createAnalysis)
 	mux.HandleFunc("GET /v1/analyses/{id}", h.getAnalysis)
+	if h.dns != nil {
+		mux.HandleFunc("POST /v1/domains/{domain}/dns", h.enrichDNS)
+		mux.HandleFunc("GET /v1/domains/{domain}/dns", h.latestDNS)
+		mux.HandleFunc("GET /v1/domains/{domain}/dns/history", h.dnsHistory)
+		mux.HandleFunc("POST /v1/analyses/{id}/dns", h.enrichDNS)
+	}
 	return securityHeaders(h.accessLog(mux))
 }
 
