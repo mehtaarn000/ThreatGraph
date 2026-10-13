@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"threatgraph/backend/internal/api"
@@ -27,22 +28,49 @@ func NewPostgres(db *sql.DB) *Postgres {
 }
 
 func (p *Postgres) Migrate(ctx context.Context) error {
-	script, err := migrations.ReadFile("migrations/001_create_analyses.sql")
+	files, err := migrations.ReadDir("migrations")
 	if err != nil {
-		return fmt.Errorf("read embedded migration: %w", err)
+		return fmt.Errorf("list migrations: %w", err)
 	}
+	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin database migration: %w", err)
 	}
 	defer tx.Rollback()
-	for _, statement := range strings.Split(string(script), ";") {
-		statement = strings.TrimSpace(statement)
-		if statement == "" {
+	// Serialize startup migrations across API processes in this database.
+	if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock(746872656174)"); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"); err != nil {
+		return err
+	}
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".sql") {
 			continue
 		}
-		if _, err := tx.ExecContext(ctx, statement); err != nil {
-			return fmt.Errorf("apply database migration: %w", err)
+		var applied bool
+		if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE name = $1)", file.Name()).Scan(&applied); err != nil {
+			return err
+		}
+		if applied {
+			continue
+		}
+		script, err := migrations.ReadFile("migrations/" + file.Name())
+		if err != nil {
+			return err
+		}
+		// Migrations currently contain plain SQL statements, no procedural blocks.
+		for _, statement := range strings.Split(string(script), ";") {
+			if strings.TrimSpace(statement) == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, statement); err != nil {
+				return fmt.Errorf("apply %s: %w", file.Name(), err)
+			}
+		}
+		if _, err := tx.ExecContext(ctx, "INSERT INTO schema_migrations (name) VALUES ($1)", file.Name()); err != nil {
+			return err
 		}
 	}
 	if err := tx.Commit(); err != nil {
