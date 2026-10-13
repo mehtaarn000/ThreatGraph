@@ -37,3 +37,17 @@ def test_direct_domain_similarity_has_known_values(candidate, edit, dice):
     result = extract_brand_features(candidate, "Unrelated display name", "acme.test")
     assert result["official_domain_edit_similarity"] == pytest.approx(edit)
     assert result["official_domain_bigram_dice"] == pytest.approx(dice)
+
+
+@pytest.mark.parametrize("candidate, official", [
+    ("https://xn--bcher-kva.test", "bücher.test"),
+    ("https://bücher.test", "xn--bcher-kva.test"),
+    ("https://bücher.test", "bücher.test"),
+    ("https://WWW.XN--BCHER-KVA.TEST./path", "https://www.bücher.test/home"),
+])
+def test_unicode_and_ascii_domain_spellings_compare_equally(candidate, official):
+    result = extract_brand_features(candidate, "Books", official)
+    assert result["official_domain_edit_similarity"] == 1.0
+    assert result["official_domain_bigram_dice"] == 1.0
+    expected = extract_brand_features("bücher.test", "Books", "bücher.test")
+    assert result["host_shannon_entropy"] == pytest.approx(expected["host_shannon_entropy"])
