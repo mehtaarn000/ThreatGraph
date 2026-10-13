@@ -94,3 +94,26 @@ def test_model_outage_does_not_save_partial_analysis_and_recovers(stack):
     assert recovered.status_code == 201, recovered.text
     assert stack.sql("SELECT count(*) FROM analyses") == "1"
 
+
+def test_database_outage_recovers_without_restarting_api(stack):
+    response = stack.create()
+    assert response.status_code == 201, response.text
+    original = response.json()
+    stack.stop("postgres")
+    assert stack.get("/healthz").status_code == 200
+    readiness = stack.get("/readyz")
+    assert readiness.status_code == 503
+    assert readiness.json()["error"]["code"] == "database_unavailable"
+    failed = stack.create()
+    assert failed.status_code == 500, failed.text
+    assert failed.json()["error"]["code"] == "persistence_error"
+    stack.start_postgres()
+    stack.wait_http("api", stack.api_url + "/readyz")
+    restored = stack.get("/v1/analyses/" + original["id"])
+    assert restored.status_code == 200, restored.text
+    assert restored.json() == original
+    assert stack.sql("SELECT count(*) FROM analyses") == "1"
+    recovered = stack.create()
+    assert recovered.status_code == 201, recovered.text
+    assert stack.sql("SELECT count(*) FROM analyses") == "2"
+
