@@ -135,3 +135,48 @@ func TestFunctionalCreateAndRetrieveAnalyses(t *testing.T) {
 	}
 }
 
+func TestFunctionalFailuresNeverCreateAnAnalysis(t *testing.T) {
+	for _, tc := range []struct {
+		name, response          string
+		modelStatus, wantStatus int
+		failWrites              bool
+		code                    string
+	}{
+		{"model unavailable", "private model detail", 503, 502, false, "model_service_error"},
+		{"missing score", "{}", 200, 502, false, "model_service_error"},
+		{"database unavailable", "", 200, 500, true, "persistence_error"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tc.failWrites {
+					var req CreateAnalysisRequest
+					_ = json.NewDecoder(r.Body).Decode(&req)
+					_ = json.NewEncoder(w).Encode(ScoreResult{CandidateURL: req.CandidateURL, BrandName: req.BrandName, BrandDomain: req.BrandDomain, ImpersonationScore: .7})
+					return
+				}
+				w.WriteHeader(tc.modelStatus)
+				_, _ = io.WriteString(w, tc.response)
+			}))
+			defer model.Close()
+			scorer, err := NewHTTPScorer(model.URL, time.Second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			repo := &workflowRepository{rows: make(map[string]Analysis), failWrites: tc.failWrites}
+			server := httptest.NewServer(NewHandler(scorer, repo, slog.New(slog.NewTextHandler(io.Discard, nil))).Routes())
+			defer server.Close()
+			var result ErrorResponse
+			workflowRequest(t, &http.Client{Timeout: 3 * time.Second}, "POST", server.URL+"/v1/analyses",
+				`{"candidate_url":"https://candidate.example","brand_name":"Acme","brand_domain":"acme.example"}`, tc.wantStatus, &result)
+			if result.Error.Code != tc.code || strings.Contains(result.Error.Message, "private") {
+				t.Fatalf("unexpected error: %+v", result)
+			}
+			repo.mu.Lock()
+			count := len(repo.rows)
+			repo.mu.Unlock()
+			if count != 0 {
+				t.Fatal("failed request persisted an analysis")
+			}
+		})
+	}
+}
