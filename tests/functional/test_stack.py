@@ -77,3 +77,20 @@ def test_all_services_restart_with_durable_data_and_loaded_model(stack):
     assert after_restart.json()["id"] != created["id"]
     assert stack.sql("SELECT count(*) FROM analyses") == "2"
 
+
+def test_model_outage_does_not_save_partial_analysis_and_recovers(stack):
+    stack.stop("model")
+    assert stack.get("/healthz").status_code == 200
+    readiness = stack.get("/readyz")
+    assert readiness.status_code == 503
+    assert readiness.json()["error"]["code"] == "model_service_unavailable"
+    response = stack.create()
+    assert response.status_code == 502, response.text
+    assert response.json()["error"]["code"] == "model_service_error"
+    assert stack.sql("SELECT count(*) FROM analyses") == "0"
+    stack.start_model()
+    assert stack.get("/readyz").status_code == 200
+    recovered = stack.create()
+    assert recovered.status_code == 201, recovered.text
+    assert stack.sql("SELECT count(*) FROM analyses") == "1"
+
