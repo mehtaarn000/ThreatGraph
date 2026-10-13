@@ -99,3 +99,58 @@ startup failure for missing/corrupt artifacts.
 These tests need no public datasets or trained production artifact. They do not
 measure model quality or cover PostgreSQL SQL behavior, Docker startup, or the
 Go-to-Python connection in a fully deployed stack.
+
+### Real PostgreSQL and cross-service tests
+
+The opt-in suite in `tests/functional` exercises the compiled Go API, the Python
+scoring service with a freshly trained synthetic model, and a real PostgreSQL
+database. It does not require Docker or a downloaded research dataset.
+
+Install PostgreSQL 16 on macOS using Homebrew:
+
+```sh
+brew install postgresql@16
+```
+
+Use the existing Python environment with `ml/requirements-service.txt` installed.
+Install Go 1.25 or newer. From the repository root, run:
+
+```sh
+PG_BINDIR="$(brew --prefix postgresql@16)/bin" \
+THREATGRAPH_RUN_STACK_TESTS=1 \
+ml/.venv/bin/python -m pytest tests/functional -v
+```
+
+If Go is not on PATH, set `GO_BIN` to its executable. On Linux, set `PG_BINDIR`
+to the directory containing `initdb`, `postgres`, and `psql`. Run as a regular
+user, since PostgreSQL refuses to initialize as root. The harness builds the API
+with Go's race detector, so a supported C compiler/toolchain is needed.
+
+Each test initializes a new temporary database cluster, creates a dedicated
+non-superuser application role, and starts its own API and model processes.
+PostgreSQL accepts only Unix-socket connections inside a private temporary
+directory; database TCP connections are disabled. The harness never reads
+`DATABASE_URL` or uses Homebrew's default database cluster, and it does not
+register a login/background service. HTTP services use temporary ports; run this
+local-only suite on a trusted development machine (the Go API binds all
+interfaces and has no authentication).
+
+Coverage includes:
+- Startup readiness and automatic database migration.
+- HTTP score/explanation equality with direct model-service output and stored SQL data.
+- Distinct IDs, timestamps, quoted brand names, and retrieval of persisted records.
+- API restart and repeat migration without losing rows.
+- Restarting all three services while retaining database files.
+- Model outage returning 502 without inserting rows, followed by recovery.
+- Database outage, error responses, and connection-pool recovery without an API restart.
+- Invalid requests and missing records without database writes.
+
+Subprocesses are stopped in fixture teardown, including after assertion failures.
+The short Unix-socket directory is removed. Logs and database files remain in
+pytest's managed temporary directory for failure diagnosis; pytest normally
+retains only recent runs. Without `THREATGRAPH_RUN_STACK_TESTS=1`, this suite is
+skipped. Ordinary unit/functional tests can still run without PostgreSQL.
+
+This validates a local process deployment with synthetic data. Docker image
+builds, AWS deployment, production authentication, and model accuracy remain
+separate checks.
