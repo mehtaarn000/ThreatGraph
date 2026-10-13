@@ -4,3 +4,6 @@ backend/threatgraph-api
 backend/api
 backend/coverage.out
 backend/profile.out
+__pycache__/
+*.py[cod]
+.pytest_cache/
