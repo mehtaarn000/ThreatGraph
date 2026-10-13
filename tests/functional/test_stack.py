@@ -117,3 +117,20 @@ def test_database_outage_recovers_without_restarting_api(stack):
     assert recovered.status_code == 201, recovered.text
     assert stack.sql("SELECT count(*) FROM analyses") == "2"
 
+
+def test_invalid_inputs_and_missing_records_do_not_modify_database(stack):
+    for overrides in (
+        {"candidate_url": "file:///tmp/never-fetch"},
+        {"brand_name": " "},
+        {"candidate_url": "https://acme.test", "unexpected_field": True},
+    ):
+        response = stack.create(**overrides)
+        assert response.status_code in (400, 422), response.text
+        assert "error" in response.json()
+    missing = stack.get("/v1/analyses/00000000-0000-4000-8000-000000000000")
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "analysis_not_found"
+    invalid = stack.get("/v1/analyses/not-a-uuid")
+    assert invalid.status_code == 400
+    assert invalid.json()["error"]["code"] == "invalid_id"
+    assert stack.sql("SELECT count(*) FROM analyses") == "0"
