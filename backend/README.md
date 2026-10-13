@@ -154,3 +154,16 @@ skipped. Ordinary unit/functional tests can still run without PostgreSQL.
 This validates a local process deployment with synthetic data. Docker image
 builds, AWS deployment, production authentication, and model accuracy remain
 separate checks.
+
+### DNS enrichment
+
+The Go API can now collect A, AAAA, NS, and MX records for a domain, save
+timestamped observations, and reuse cached snapshots across restarts.
+
+- `POST /v1/domains/{domain}/dns`: collect or reuse an observation.
+- `GET /v1/domains/{domain}/dns`: retrieve the latest saved observation.
+- `GET /v1/domains/{domain}/dns/history?limit=20`: retrieve recent observations.
+- `POST /v1/analyses/{id}/dns`: enrich an existing analysis's candidate domain.
+
+See [DNS enrichment](docs/dns-enrichment.md) for cache settings, response semantics,
+relationship types, limitations, and tests.
