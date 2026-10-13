@@ -50,6 +50,7 @@ class Stack:
         self.directory = directory
         self.binary = binary
         self.model = model
+        self.dns_server = ""
         self.pg_bin = postgres_bin()
         self.data = directory / "pgdata"
         # Short socket path avoids PostgreSQL's Unix socket path length limit.
@@ -139,6 +140,8 @@ class Stack:
     def start_api(self):
         self.launch("api", [self.binary], {
             "PORT": str(self.api_port), "SCORER_URL": self.model_url,
+            "DNS_SERVER": self.dns_server, "DNS_LOOKUP_TIMEOUT": "250ms",
+            "DNS_CACHE_TTL": "5m", "DNS_NEGATIVE_CACHE_TTL": "30s",
             "DATABASE_URL": (
                 f"host={self.socket_dir} port={self.pg_port} "
                 "user=threatgraph_app dbname=threatgraph_stack sslmode=disable"

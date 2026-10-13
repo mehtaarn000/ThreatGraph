@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 from ml.src.threatgraph_ml.brand_features import extract_brand_features
 from .stack import ROOT, Stack, command
+from .dns_fixture import DNSFixture
 
 
 def pytest_collection_modifyitems(items):
@@ -40,9 +41,20 @@ def stack_artifacts(tmp_path_factory):
 
 
 @pytest.fixture
-def stack(tmp_path, stack_artifacts):
+def dns_fixture():
+    server = DNSFixture()
+    server.start()
+    try:
+        yield server
+    finally:
+        server.close()
+
+
+@pytest.fixture
+def stack(tmp_path, stack_artifacts, dns_fixture):
     binary, model = stack_artifacts
     services = Stack(tmp_path, binary, model)
+    services.dns_server = dns_fixture.address
     try:
         services.start()
         yield services
