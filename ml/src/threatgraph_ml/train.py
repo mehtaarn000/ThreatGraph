@@ -20,6 +20,7 @@ from sklearn.model_selection import StratifiedGroupKFold
 
 from .dataset import load_dataset
 from .features import make_pipeline
+from .metrics import precision_at_budget
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,14 +53,13 @@ def _group_holdout(y: np.ndarray, groups: np.ndarray):
 def _metrics(y_true, scores):
     predicted = (scores >= 0.5).astype(int)
     top_count = max(1, int(np.ceil(len(scores) * 0.01)))
-    top_indices = np.argsort(scores)[-top_count:]
     return {
         "average_precision": float(average_precision_score(y_true, scores)),
         "roc_auc": float(roc_auc_score(y_true, scores)),
         "precision_at_0_5": float(precision_score(y_true, predicted, zero_division=0)),
         "recall_at_0_5": float(recall_score(y_true, predicted, zero_division=0)),
         "f1_at_0_5": float(f1_score(y_true, predicted, zero_division=0)),
-        "precision_in_top_1_percent": float(np.mean(y_true[top_indices])),
+        "precision_in_top_1_percent": precision_at_budget(y_true, scores, top_count),
         "test_positive_rate": float(np.mean(y_true)),
     }
 

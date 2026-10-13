@@ -17,6 +17,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from .brand_features import extract_brand_features
+from .metrics import precision_at_budget
 from .zenodo_brand_data import download_dataset, load_brand_pairs
 
 
@@ -29,10 +30,9 @@ RANDOM_STATE = 42
 
 def _score_metrics(y_true, scores):
     alert_count = max(1, int(np.ceil(len(scores) * 0.01)))
-    top = np.argsort(scores)[-alert_count:]
     return {
         "average_precision": float(average_precision_score(y_true, scores)),
-        "precision_at_top_1_percent": float(np.mean(y_true[top])),
+        "precision_at_top_1_percent": precision_at_budget(y_true, scores, alert_count),
         "precision_at_0_5": float(precision_score(y_true, scores >= 0.5, zero_division=0)),
         "recall_at_0_5": float(recall_score(y_true, scores >= 0.5, zero_division=0)),
     }
