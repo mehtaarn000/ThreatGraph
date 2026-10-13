@@ -55,8 +55,38 @@ Add a reviewed `domain-brand` dataset with labels `confirmed_impersonation`,
 binary training run. Preserve source provenance and timestamps, then use a
 campaign-aware and time-based holdout before claiming brand-risk performance.
 
-The first domain–brand label contract and lexical feature extractor are now in
+The domain–brand label contract and lexical feature extractor are in
 `ml/docs/brand-labeling.md`, `ml/templates/domain_brand_labels.csv`, and
 `ml/src/threatgraph_ml/brand_features.py`. `brand_dataset.py` validates reviewed
-labels and builds a feature table; a brand-specific model is intentionally not
-trained until reviewed examples exist.
+labels and builds a feature table.
+
+## Exploratory brand-pair benchmark
+
+The [Zenodo Phishing Website Dataset](https://zenodo.org/records/8041387)
+provides phishing records with target-brand identifiers and a separate
+non-phishing pool. Its metadata lists CC BY 4.0 and DOI
+`10.5281/zenodo.8041387`; cite the dataset and retain attribution if reusing its
+data. The downloader fetches only `brands.csv`, `phishing.csv`, and
+`not-phishing.csv`. It does not download the much larger archived page files or
+visit any URLs.
+
+Run the first pair-model experiment with:
+
+```bash
+python -m ml.src.threatgraph_ml.train_brand_baseline
+```
+
+The source phishing records include a target brand, so they are used as
+source-labeled positive pairs. The non-phishing records do not name a brand;
+the experiment samples those domains and assigns brands according to the
+positive brand distribution. These are weak negative proxies, not manually
+reviewed domain–brand judgments. The report preserves that limitation, uses a
+candidate-domain grouped split, and compares the logistic model with a simple
+brand-token rule. Because the source is historical and the negative pairs are
+weak, its metrics are only a pipeline benchmark. Do not use them to claim
+production brand-impersonation performance.
+
+The fitted model is written to `ml/artifacts/zenodo_brand_pair_baseline.joblib`
+and the run manifest to `ml/reports/zenodo_brand_pair_metrics.json`; both are
+ignored by Git. The earlier PhiUSIIL model remains the generic phishing URL
+baseline and has a separate report.
