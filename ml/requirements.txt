@@ -4,3 +4,4 @@ scipy==1.13.1
 scikit-learn==1.5.2
 joblib==1.4.2
 ucimlrepo==0.0.7
+pytest==8.3.5

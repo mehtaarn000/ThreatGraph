@@ -19,6 +19,15 @@ SUSPICIOUS_TERMS = (
     "signin", "update", "verify", "wallet", "webscr",
 )
 OBFUSCATION_CHARS = re.compile(r"[%@]|\\x[0-9a-fA-F]{2}|&#x?[0-9a-fA-F]+;|xn--")
+LEXICAL_FEATURE_NAMES = (
+    "url_length", "host_length", "path_length", "query_length", "dot_count",
+    "hyphen_count", "underscore_count", "at_count", "percent_count",
+    "slash_count", "question_count", "equals_count", "ampersand_count",
+    "host_label_count", "subdomain_depth_estimate", "digit_count", "letter_count",
+    "special_count", "digit_ratio", "special_ratio", "character_diversity",
+    "uses_https", "uses_http", "has_userinfo", "port_present", "host_is_ip",
+    "has_punycode", "obfuscation_marker_count", "suspicious_term_count",
+)
 
 
 def _split_url(value: str):
@@ -41,7 +50,6 @@ def lexical_vector(urls):
     for raw in urls:
         text, parsed = _split_url(raw)
         host = (parsed.hostname or "").lower().rstrip(".")
-        path_and_query = (parsed.path or "") + ("?" + parsed.query if parsed.query else "")
         host_labels = [part for part in host.split(".") if part]
         digits = sum(char.isdigit() for char in text)
         letters = sum(char.isalpha() for char in text)
@@ -65,7 +73,7 @@ def lexical_vector(urls):
             _is_ip(host), int("xn--" in host), len(OBFUSCATION_CHARS.findall(text)),
             term_count,
         ])
-    return np.asarray(columns, dtype=np.float32)
+    return np.asarray(columns, dtype=np.float32).reshape((-1, len(LEXICAL_FEATURE_NAMES)))
 
 
 class LexicalFeatures(BaseEstimator, TransformerMixin):
