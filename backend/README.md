@@ -69,3 +69,33 @@ The next backend increment can move discovery and scoring into background jobs,
 then add brand management and graph correlation endpoints.
 
 The Compose stack binds published API and database ports to 127.0.0.1. Keep these local bindings until authentication and deployment access controls are configured.
+
+### Functional tests
+
+From the repository root:
+
+```sh
+(cd backend && go test -race ./...)
+ml/.venv/bin/python -m pytest ml/tests -q
+```
+
+To run just the functional workflows:
+
+```sh
+(cd backend && go test -race ./internal/api -run Functional -v)
+ml/.venv/bin/python -m pytest ml/tests/test_scoring_workflow.py -q
+```
+
+Go workflow tests send real HTTP requests through the API and model client,
+using a controlled model HTTP server and a stateful in-memory repository. They
+cover creating and retrieving distinct analyses, explanations, missing records,
+and model/persistence failures without saving partial results.
+
+Python workflow tests build a synthetic labeled dataset, train and save a real
+classifier, start the model API with that artifact, and compare HTTP predictions
+with direct inference. They also check model caching, invalid requests, and
+startup failure for missing/corrupt artifacts.
+
+These tests need no public datasets or trained production artifact. They do not
+measure model quality or cover PostgreSQL SQL behavior, Docker startup, or the
+Go-to-Python connection in a fully deployed stack.
