@@ -106,9 +106,11 @@ ml/.venv/bin/python -m ml.src.threatgraph_ml.score_dns saved-dns-response.json
 Accepts the existing Go endpoint's wrapped response (`snapshot` plus `cached`)
 or an unwrapped snapshot. It returns an **uncalibrated** phishing score, threshold,
 model name, observation time and unknown record types. Load only trusted local
-joblib files. This is an offline integration adapter; it is not wired into the
-production API or substituted for the brand classifier. A fresh trained bundle
-can be loaded once and reused across requests when that integration is added.
+joblib files. The same adapter now powers the internal `/v1/score/dns` endpoint.
+Set `THREATGRAPH_DNS_MODEL_PATH` to load a bundle once at startup. The Go API
+persists separate generic-phishing predictions; it does not substitute this
+model for the brand classifier. See
+[backend integration](../../backend/docs/dns-predictions.md) for the full contract.
 
 ## Limits and next evaluation
 

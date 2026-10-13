@@ -11,6 +11,8 @@ tracked by Git):
 
 ```bash
 python -m ml.src.threatgraph_ml.train_brand_baseline
+python -m ml.src.threatgraph_ml.domainradar_data
+python -m ml.src.threatgraph_ml.train_dns
 ```
 
 Then build and start the services:
@@ -167,3 +169,13 @@ timestamped observations, and reuse cached snapshots across restarts.
 
 See [DNS enrichment](docs/dns-enrichment.md) for cache settings, response semantics,
 relationship types, limitations, and tests.
+
+### DNS model predictions
+
+- `POST /v1/domains/{domain}/dns/predictions`: enrich and score the domain, then
+  persist an experimental generic-phishing prediction.
+- `GET /v1/domains/{domain}/dns/predictions`: retrieve up to 100 saved predictions.
+
+See [DNS predictions](docs/dns-predictions.md) for model configuration, snapshot
+and artifact references, retry behavior, and limitations. These predictions
+remain separate from brand-impersonation analyses.
