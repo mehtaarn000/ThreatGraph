@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: threatgraph
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-threatgraph_dev_only}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -45,7 +45,7 @@ services:
       model-service:
         condition: service_healthy
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "127.0.0.1:${API_PORT:-8080}:8080"
 
 volumes:
   postgres_data:

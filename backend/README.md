@@ -67,3 +67,5 @@ training set are still needed.
 The API currently performs scoring synchronously and saves completed analyses.
 The next backend increment can move discovery and scoring into background jobs,
 then add brand management and graph correlation endpoints.
+
+The Compose stack binds published API and database ports to 127.0.0.1. Keep these local bindings until authentication and deployment access controls are configured.
