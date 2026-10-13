@@ -13,3 +13,15 @@ from ml.src.threatgraph_ml.brand_features import NEW_FEATURE_NAMES, extract_bran
 def test_entropy_matches_known_distributions(host, expected):
     features = extract_brand_features(host, "Acme", "acme.test")
     assert features["host_shannon_entropy"] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("candidate, expected_host", [
+    ("https://WWW.AB.AB./login?token=zzzz", "abab"),
+    ("https://bbaa", "abab"),
+    ("https://a-1a", "a-1a"),
+])
+def test_entropy_uses_only_normalized_hostname_characters(candidate, expected_host):
+    result = extract_brand_features(candidate, "Acme", "acme.test")
+    probabilities = [expected_host.count(c) / len(expected_host) for c in set(expected_host)]
+    expected = -sum(p * math.log2(p) for p in probabilities)
+    assert result["host_shannon_entropy"] == pytest.approx(expected)
