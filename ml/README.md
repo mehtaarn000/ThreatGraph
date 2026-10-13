@@ -1,0 +1,56 @@
+# ThreatGraph ML pipeline (initial slice)
+
+This is the first reproducible ML pipeline for ThreatGraph. It uses the UCI
+PhiUSIIL Phishing URL (Website) dataset to train a **generic phishing URL
+classifier**. Its labels do not identify which brand is being impersonated, so
+this model is not a brand-impersonation classifier and its score must not be
+presented as one.
+
+UCI documents 235,795 URL/page records. Its `Label` field uses `0` for phishing
+and `1` for legitimate. The dataset is CC BY 4.0. Cite Prasad & Chandra (2024),
+UCI Machine Learning Repository, DOI: <https://doi.org/10.1016/j.cose.2023.103545>.
+
+## What this pipeline does
+
+1. Downloads the dataset from UCI into a local, ignored data directory.
+2. Trains two logistic-regression models: handcrafted URL lexical features,
+   then lexical features combined with character n-grams.
+3. Splits by the dataset's `Domain` value where available, keeping a domain
+   group out of both train and test. This is a group holdout, not a temporal
+   test: the dataset does not provide the observation times needed for one.
+4. Reports average precision, precision, recall, F1, ROC AUC, and precision in
+   the highest-scored 1% of the test set.
+5. Saves the best model, feature configuration, and a JSON report locally.
+
+The first experiment is intended to validate data handling, feature extraction,
+model persistence, and evaluation. It does not establish production performance
+or prove that the model generalizes to a new feed, time period, or target brand.
+
+## Setup
+
+Requires Python 3.9 or newer. From the repository root:
+
+```bash
+python3 -m venv ml/.venv
+source ml/.venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r ml/requirements.txt
+```
+
+## Download and train
+
+```bash
+python -m ml.src.threatgraph_ml.train
+```
+
+The command fetches the public UCI dataset, trains both models, prints metrics,
+and writes artifacts under `ml/artifacts/` and a report under `ml/reports/`.
+Raw data, fitted models, and generated reports are excluded from Git. Keep the
+dataset citation and license information with any published results.
+
+## Next ML milestone
+
+Add a reviewed `domain-brand` dataset with labels `confirmed_impersonation`,
+`confirmed_not_impersonation`, and `unknown`. Only the first two should enter a
+binary training run. Preserve source provenance and timestamps, then use a
+campaign-aware and time-based holdout before claiming brand-risk performance.

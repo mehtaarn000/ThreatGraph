@@ -1,0 +1,9 @@
+data/
+artifacts/
+reports/*.json
+reports/*.csv
+reports/*.md
+!reports/.gitkeep
+__pycache__/
+*.py[cod]
+.venv/
