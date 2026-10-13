@@ -51,3 +51,15 @@ def test_unicode_and_ascii_domain_spellings_compare_equally(candidate, official)
     assert result["official_domain_bigram_dice"] == 1.0
     expected = extract_brand_features("bücher.test", "Books", "bücher.test")
     assert result["host_shannon_entropy"] == pytest.approx(expected["host_shannon_entropy"])
+
+
+@pytest.mark.parametrize("host, official_flag", [
+    ("accounts.acme.test", 1),
+    ("acme.test.attacker.test", 0),
+    ("notacme.test", 0),
+])
+def test_similarity_retains_subdomains_and_suffix_boundaries(host, official_flag):
+    result = extract_brand_features("https://" + host, "Acme", "acme.test")
+    assert 0 < result["official_domain_edit_similarity"] < 1
+    assert 0 < result["official_domain_bigram_dice"] < 1
+    assert result["official_brand_domain_or_subdomain"] == official_flag
