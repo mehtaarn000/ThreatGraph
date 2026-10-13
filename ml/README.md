@@ -90,3 +90,28 @@ The fitted model is written to `ml/artifacts/zenodo_brand_pair_baseline.joblib`
 and the run manifest to `ml/reports/zenodo_brand_pair_metrics.json`; both are
 ignored by Git. The earlier PhiUSIIL model remains the generic phishing URL
 baseline and has a separate report.
+
+### Score one candidate–brand pair
+
+After training, score a candidate against a specific brand:
+
+```python
+from ml.src.threatgraph_ml.brand_inference import score_brand_pair
+
+result = score_brand_pair(
+    "https://acme-login.example/secure",
+    brand_name="Acme",
+    brand_domain="https://acme.example",
+)
+```
+
+The returned `impersonation_score` is an **uncalibrated model score**, not a
+reliable probability or a verdict. `feature_contributions` lists the strongest
+log-odds contributions from the logistic model. These explain the model's
+behavior; they do not establish malicious intent. This function only examines
+the supplied URL string and brand details; it does not fetch the site.
+
+The application should load the model once at process startup, then call this
+function from its inference service. Before treating scores as alert thresholds,
+replace weak negatives with reviewed domain–brand labels, calibrate on a
+separate validation set, and choose thresholds against an analyst alert budget.
