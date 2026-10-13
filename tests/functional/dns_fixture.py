@@ -28,7 +28,7 @@ class DNSHandler(socketserver.BaseRequestHandler):
         domain = ".".join(labels).lower()
         with self.server.lock:
             self.server.questions[(domain, record_type)] += 1
-        if domain == "partial.test" and record_type == 15:
+        if domain == "timeout.test" or (domain == "partial.test" and record_type == 15):
             return  # Simulate one record type timing out.
         status = 3 if domain == "missing.test" else 0
         payload = None

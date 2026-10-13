@@ -52,7 +52,7 @@ def test_dns_records_cache_history_and_restart(stack, dns_fixture):
     history = stack.get("/v1/domains/acme-review.test/dns/history?limit=1")
     assert history.json()["observations"] == [snapshot]
     assert stack.sql("SELECT count(*) FROM dns_observations") == "1"
-    assert stack.sql("SELECT count(*) FROM schema_migrations") == "2"
+    assert stack.sql("SELECT count(*) FROM schema_migrations") == "3"
 
 
 def test_expired_cache_appends_an_observation(stack, dns_fixture):
@@ -124,8 +124,8 @@ def test_migration_upgrades_legacy_database_without_losing_analyses(stack):
     assert response.status_code == 201
     original = response.json()
     stack.stop("api")
-    stack.sql("DROP TABLE dns_observations; DROP TABLE schema_migrations")
+    stack.sql("DROP TABLE dns_predictions; DROP TABLE dns_observations; DROP TABLE schema_migrations")
     stack.start_api()
     assert stack.get("/v1/analyses/" + original["id"]).json() == original
-    assert stack.sql("SELECT count(*) FROM schema_migrations") == "2"
+    assert stack.sql("SELECT count(*) FROM schema_migrations") == "3"
     assert enrich(stack, "acme-review.test")["snapshot"]["id"]

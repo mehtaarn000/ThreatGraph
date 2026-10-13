@@ -50,6 +50,7 @@ class Stack:
         self.directory = directory
         self.binary = binary
         self.model = model
+        self.dns_model = None
         self.dns_server = ""
         self.pg_bin = postgres_bin()
         self.data = directory / "pgdata"
@@ -134,7 +135,8 @@ class Stack:
         self.launch("model", [
             sys.executable, "-m", "uvicorn", "ml.src.threatgraph_ml.scoring_api:app",
             "--host", "127.0.0.1", "--port", self.model_port,
-        ], {"THREATGRAPH_BRAND_MODEL_PATH": str(self.model)})
+        ], {"THREATGRAPH_BRAND_MODEL_PATH": str(self.model),
+            "THREATGRAPH_DNS_MODEL_PATH": str(self.dns_model) if self.dns_model else ""})
         self.wait_http("model", self.model_url + "/healthz")
 
     def start_api(self):
