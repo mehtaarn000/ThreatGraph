@@ -75,3 +75,13 @@ def test_functional_labels_to_artifact_to_http_predictions(trained_artifact, mon
         assert invalid.status_code == 422
         assert client.post("/v1/score", json=payload).status_code == 200
 
+
+@pytest.mark.parametrize("contents", [None, b"not a model"])
+def test_functional_service_refuses_missing_or_corrupt_artifact(tmp_path, monkeypatch, contents):
+    path = tmp_path / "broken.joblib"
+    if contents is not None:
+        path.write_bytes(contents)
+    monkeypatch.setenv("THREATGRAPH_BRAND_MODEL_PATH", str(path))
+    with pytest.raises(RuntimeError, match="brand-pair model failed to load"):
+        with TestClient(create_app()):
+            pytest.fail("Service started without a usable model")
