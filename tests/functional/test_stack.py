@@ -42,3 +42,19 @@ def test_analysis_round_trip_matches_model_and_postgres(stack):
         assert stored["score"] == created["result"]["impersonation_score"]
     assert stack.sql("SELECT count(*) FROM analyses") == "2"
 
+
+def test_api_restart_preserves_records_and_reapplies_migration_safely(stack):
+    response = stack.create()
+    assert response.status_code == 201, response.text
+    created = response.json()
+    stack.stop("api")
+    stack.start_api()
+    retrieved = stack.get("/v1/analyses/" + created["id"])
+    assert retrieved.status_code == 200, retrieved.text
+    assert retrieved.json() == created
+    assert stack.sql("SELECT count(*) FROM analyses") == "1"
+    second = stack.create(candidate_url="https://second-acme.test")
+    assert second.status_code == 201, second.text
+    assert second.json()["id"] != created["id"]
+    assert stack.sql("SELECT count(*) FROM analyses") == "2"
+
