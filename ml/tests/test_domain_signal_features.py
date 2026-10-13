@@ -25,3 +25,15 @@ def test_entropy_uses_only_normalized_hostname_characters(candidate, expected_ho
     probabilities = [expected_host.count(c) / len(expected_host) for c in set(expected_host)]
     expected = -sum(p * math.log2(p) for p in probabilities)
     assert result["host_shannon_entropy"] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("candidate, edit, dice", [
+    ("https://acme.test", 1.0, 1.0),
+    ("https://acmf.test", 8 / 9, 0.75),
+    ("https://zzzz.zzzz", 1 / 9, 0.0),
+])
+def test_direct_domain_similarity_has_known_values(candidate, edit, dice):
+    # Deliberately unrelated display name: these compare to the official domain.
+    result = extract_brand_features(candidate, "Unrelated display name", "acme.test")
+    assert result["official_domain_edit_similarity"] == pytest.approx(edit)
+    assert result["official_domain_bigram_dice"] == pytest.approx(dice)
