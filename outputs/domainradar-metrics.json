@@ -1,0 +1,580 @@
+{
+  "dataset": "https://zenodo.org/records/14332167",
+  "license": "CC BY 4.0",
+  "sampling": "Seeded byte window in each equal-size file stratum; incomplete boundary records excluded. Approximate record sampling with boundary/record-length bias.",
+  "sample_sha256": "5cd41fbc98390c4a1e00bf197c87fb06f117cb0edda7776aac63c39ac89b8494",
+  "downloaded_bytes": 297795584,
+  "raw_sample_counts": {
+    "phishing.json": 3324,
+    "benign_cesnet.json": 9368,
+    "benign_umbrella.json": 7429
+  },
+  "usable_rows": 19932,
+  "rejected": {
+    "invalid_record:InvalidCodepoint": 90,
+    "invalid_record:ValueError": 33,
+    "invalid_record:IDNAError": 61,
+    "conflicting_label_rows": 0,
+    "duplicate_host_rows": 5
+  },
+  "source_audit": {
+    "benign_cesnet.json": {
+      "rows": 9260,
+      "first_scan": "2023-12-18T01:54:37.141000+00:00",
+      "last_scan": "2023-12-24T13:22:28.214000+00:00",
+      "record_missing_rates": {
+        "dns_a_missing": 0.0,
+        "dns_aaaa_missing": 0.0,
+        "dns_ns_missing": 0.0,
+        "dns_mx_missing": 0.0
+      }
+    },
+    "benign_umbrella.json": {
+      "rows": 7355,
+      "first_scan": "2023-07-14T23:59:21.139000+00:00",
+      "last_scan": "2023-07-29T17:03:16.906000+00:00",
+      "record_missing_rates": {
+        "dns_a_missing": 0.0,
+        "dns_aaaa_missing": 0.0,
+        "dns_ns_missing": 0.0,
+        "dns_mx_missing": 0.0
+      }
+    },
+    "phishing.json": {
+      "rows": 3317,
+      "first_scan": "2023-08-01T13:27:07.777000+00:00",
+      "last_scan": "2024-05-16T15:09:38.581000+00:00",
+      "record_missing_rates": {
+        "dns_a_missing": 0.0,
+        "dns_aaaa_missing": 0.0,
+        "dns_ns_missing": 0.0,
+        "dns_mx_missing": 0.0
+      }
+    }
+  },
+  "timestamp_sources": {
+    "dns_evaluated_on": 19932
+  },
+  "split": {
+    "strategy": "chronological_60_20_20_with_registrable_domain_purge",
+    "temporal_fallback_reason": null,
+    "attempted_temporal_counts": {
+      "train": {
+        "0": 10446,
+        "1": 992
+      },
+      "validation": {
+        "0": 3875,
+        "1": 38
+      },
+      "test": {
+        "0": 2027,
+        "1": 1960
+      }
+    },
+    "temporal_cutoffs": [
+      "2023-12-20T09:55:16.118000128+00:00",
+      "2023-12-23T08:16:13.597199872+00:00"
+    ],
+    "purged_rows": 594,
+    "partitions": {
+      "train": {
+        "rows": 11438,
+        "groups": 9203,
+        "positive_rate": 0.08672844902955062,
+        "class_counts": {
+          "0": 10446,
+          "1": 992
+        },
+        "source_file_counts": {
+          "benign_umbrella.json": 7256,
+          "benign_cesnet.json": 3190,
+          "phishing.json": 992
+        },
+        "first_scan": "2023-07-14T23:59:21.139000+00:00",
+        "last_scan": "2023-12-20T09:55:16.007000+00:00"
+      },
+      "validation": {
+        "rows": 3913,
+        "groups": 3729,
+        "positive_rate": 0.009711219013544594,
+        "class_counts": {
+          "0": 3875,
+          "1": 38
+        },
+        "source_file_counts": {
+          "benign_cesnet.json": 3875,
+          "phishing.json": 38
+        },
+        "first_scan": "2023-12-20T09:55:16.192000+00:00",
+        "last_scan": "2023-12-23T08:16:13.226000+00:00"
+      },
+      "test": {
+        "rows": 3987,
+        "groups": 3539,
+        "positive_rate": 0.491597692500627,
+        "class_counts": {
+          "0": 2027,
+          "1": 1960
+        },
+        "source_file_counts": {
+          "benign_cesnet.json": 2027,
+          "phishing.json": 1960
+        },
+        "first_scan": "2023-12-23T08:16:13.690000+00:00",
+        "last_scan": "2024-05-16T15:09:38.581000+00:00"
+      }
+    }
+  },
+  "models": {
+    "logistic_lexical": {
+      "feature_count": 10,
+      "features": [
+        "lex_host_length",
+        "lex_label_count",
+        "lex_longest_label",
+        "lex_digit_ratio",
+        "lex_hyphen_count",
+        "lex_entropy",
+        "lex_unique_ratio",
+        "lex_punycode",
+        "lex_keyword_count",
+        "lex_subdomain_labels"
+      ],
+      "validation": {
+        "average_precision": 0.11146510594301144,
+        "roc_auc": 0.7253412563667232,
+        "precision": 0.021739130434782608,
+        "recall": 0.631578947368421,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.1,
+        "alert_count": 1104
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.7439166596940471,
+        "roc_auc": 0.7399994210807164,
+        "precision": 0.6917411888479748,
+        "recall": 0.6709183673469388,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1901
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.7439166596940471,
+        "roc_auc": 0.7399994210807164,
+        "precision": 0.6917411888479748,
+        "recall": 0.6709183673469388,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1901
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.28909718796250616
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.6709183673469388
+        }
+      }
+    },
+    "logistic_dns": {
+      "feature_count": 19,
+      "features": [
+        "dns_a_missing",
+        "dns_a_count",
+        "dns_aaaa_missing",
+        "dns_aaaa_count",
+        "dns_ns_missing",
+        "dns_ns_count",
+        "dns_mx_missing",
+        "dns_mx_count",
+        "dns_ns_mean_length",
+        "dns_ns_mean_entropy",
+        "dns_ns_same_domain_ratio",
+        "dns_mx_mean_length",
+        "dns_mx_mean_entropy",
+        "dns_mx_same_domain_ratio",
+        "dns_mx_preference_min",
+        "dns_mx_preference_max",
+        "dns_null_mx",
+        "dns_a_prefix_count",
+        "dns_aaaa_prefix_count"
+      ],
+      "validation": {
+        "average_precision": 0.02802251713447575,
+        "roc_auc": 0.7043429541595925,
+        "precision": 0.015469613259668509,
+        "recall": 0.7368421052631579,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.05,
+        "alert_count": 1810
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.6936971920829672,
+        "roc_auc": 0.7399075491074575,
+        "precision": 0.6359014470082127,
+        "recall": 0.8295918367346938,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.975,
+        "alert_count": 2557
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.6936971920829672,
+        "roc_auc": 0.7399075491074575,
+        "precision": 0.6359014470082127,
+        "recall": 0.8295918367346938,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.975,
+        "alert_count": 2557
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.45929945732609767
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.8295918367346938
+        }
+      }
+    },
+    "logistic_combined": {
+      "feature_count": 29,
+      "features": [
+        "lex_host_length",
+        "lex_label_count",
+        "lex_longest_label",
+        "lex_digit_ratio",
+        "lex_hyphen_count",
+        "lex_entropy",
+        "lex_unique_ratio",
+        "lex_punycode",
+        "lex_keyword_count",
+        "lex_subdomain_labels",
+        "dns_a_missing",
+        "dns_a_count",
+        "dns_aaaa_missing",
+        "dns_aaaa_count",
+        "dns_ns_missing",
+        "dns_ns_count",
+        "dns_mx_missing",
+        "dns_mx_count",
+        "dns_ns_mean_length",
+        "dns_ns_mean_entropy",
+        "dns_ns_same_domain_ratio",
+        "dns_mx_mean_length",
+        "dns_mx_mean_entropy",
+        "dns_mx_same_domain_ratio",
+        "dns_mx_preference_min",
+        "dns_mx_preference_max",
+        "dns_null_mx",
+        "dns_a_prefix_count",
+        "dns_aaaa_prefix_count"
+      ],
+      "validation": {
+        "average_precision": 0.08803666553514591,
+        "roc_auc": 0.8151986417657046,
+        "precision": 0.027327935222672066,
+        "recall": 0.7105263157894737,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.15,
+        "alert_count": 988
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.8048393753314598,
+        "roc_auc": 0.8208355567189877,
+        "precision": 0.7255859375,
+        "recall": 0.7581632653061224,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 2048
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.8048393753314598,
+        "roc_auc": 0.8208355567189877,
+        "precision": 0.7255859375,
+        "recall": 0.7581632653061224,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 2048
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.2772570300937346
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.7581632653061224
+        }
+      }
+    },
+    "lightgbm_lexical": {
+      "feature_count": 10,
+      "features": [
+        "lex_host_length",
+        "lex_label_count",
+        "lex_longest_label",
+        "lex_digit_ratio",
+        "lex_hyphen_count",
+        "lex_entropy",
+        "lex_unique_ratio",
+        "lex_punycode",
+        "lex_keyword_count",
+        "lex_subdomain_labels"
+      ],
+      "validation": {
+        "average_precision": 0.1426861560785783,
+        "roc_auc": 0.7610152801358234,
+        "precision": 0.02857142857142857,
+        "recall": 0.5526315789473685,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.125,
+        "alert_count": 735
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.7789568668026251,
+        "roc_auc": 0.7490636609848675,
+        "precision": 0.7332904884318766,
+        "recall": 0.5821428571428572,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1556
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.7789568668026251,
+        "roc_auc": 0.7490636609848675,
+        "precision": 0.7332904884318766,
+        "recall": 0.5821428571428572,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1556
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.20473606314750864
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.5821428571428572
+        }
+      }
+    },
+    "lightgbm_dns": {
+      "feature_count": 19,
+      "features": [
+        "dns_a_missing",
+        "dns_a_count",
+        "dns_aaaa_missing",
+        "dns_aaaa_count",
+        "dns_ns_missing",
+        "dns_ns_count",
+        "dns_mx_missing",
+        "dns_mx_count",
+        "dns_ns_mean_length",
+        "dns_ns_mean_entropy",
+        "dns_ns_same_domain_ratio",
+        "dns_mx_mean_length",
+        "dns_mx_mean_entropy",
+        "dns_mx_same_domain_ratio",
+        "dns_mx_preference_min",
+        "dns_mx_preference_max",
+        "dns_null_mx",
+        "dns_a_prefix_count",
+        "dns_aaaa_prefix_count"
+      ],
+      "validation": {
+        "average_precision": 0.1276370537482322,
+        "roc_auc": 0.8296061120543294,
+        "precision": 0.022068965517241378,
+        "recall": 0.8421052631578947,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.1140625,
+        "alert_count": 1450
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.7551804983440159,
+        "roc_auc": 0.7861752816568167,
+        "precision": 0.683404255319149,
+        "recall": 0.8193877551020409,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 2350
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.7551804983440159,
+        "roc_auc": 0.7861752816568167,
+        "precision": 0.683404255319149,
+        "recall": 0.8193877551020409,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 2350
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.3670448939319191
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.8193877551020409
+        }
+      }
+    },
+    "lightgbm_combined": {
+      "feature_count": 29,
+      "features": [
+        "lex_host_length",
+        "lex_label_count",
+        "lex_longest_label",
+        "lex_digit_ratio",
+        "lex_hyphen_count",
+        "lex_entropy",
+        "lex_unique_ratio",
+        "lex_punycode",
+        "lex_keyword_count",
+        "lex_subdomain_labels",
+        "dns_a_missing",
+        "dns_a_count",
+        "dns_aaaa_missing",
+        "dns_aaaa_count",
+        "dns_ns_missing",
+        "dns_ns_count",
+        "dns_mx_missing",
+        "dns_mx_count",
+        "dns_ns_mean_length",
+        "dns_ns_mean_entropy",
+        "dns_ns_same_domain_ratio",
+        "dns_mx_mean_length",
+        "dns_mx_mean_entropy",
+        "dns_mx_same_domain_ratio",
+        "dns_mx_preference_min",
+        "dns_mx_preference_max",
+        "dns_null_mx",
+        "dns_a_prefix_count",
+        "dns_aaaa_prefix_count"
+      ],
+      "validation": {
+        "average_precision": 0.2026022354538383,
+        "roc_auc": 0.8827809847198642,
+        "precision": 0.04693140794223827,
+        "recall": 0.6842105263157895,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 0.2,
+        "alert_count": 554
+      },
+      "selected_threshold": 0.5,
+      "threshold_note": "Validation could not support 90% precision with at least 20 alerts; retained 0.5.",
+      "test_at_0_5": {
+        "average_precision": 0.8553646354479014,
+        "roc_auc": 0.8618339911198815,
+        "precision": 0.8103241296518607,
+        "recall": 0.6887755102040817,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1666
+      },
+      "test_at_validation_threshold": {
+        "average_precision": 0.8553646354479014,
+        "roc_auc": 0.8618339911198815,
+        "precision": 0.8103241296518607,
+        "recall": 0.6887755102040817,
+        "threshold": 0.5,
+        "alert_budget": 40,
+        "precision_at_top_1_percent": 1.0,
+        "alert_count": 1666
+      },
+      "test_by_source_file": {
+        "benign_cesnet.json": {
+          "rows": 2027,
+          "positive_rate": 0.0,
+          "flagged_fraction_at_validation_threshold": 0.15589541193882586
+        },
+        "phishing.json": {
+          "rows": 1960,
+          "positive_rate": 1.0,
+          "flagged_fraction_at_validation_threshold": 0.6887755102040817
+        }
+      }
+    }
+  },
+  "selected_on_validation": "lightgbm_combined",
+  "dns_added_value": {
+    "logistic": {
+      "combined_minus_lexical": 0.060922715637412694,
+      "group_bootstrap_95_percent_interval": [
+        0.035092364948646634,
+        0.08093515690127909
+      ],
+      "repetitions": 200
+    },
+    "lightgbm": {
+      "combined_minus_lexical": 0.07640776864527632,
+      "group_bootstrap_95_percent_interval": [
+        0.05940233070730634,
+        0.09048241454608451
+      ],
+      "repetitions": 200
+    }
+  },
+  "limitations": [
+    "Approximate byte-window sample, not a validated uniform sample of domains.",
+    "Historical source-derived labels, not brand-impersonation or campaign labels.",
+    "Publisher collection/null semantics differ from live recursive DNS resolution.",
+    "Source and collection-time artifacts can inflate performance; this is not a production accuracy estimate.",
+    "No calibration; thresholds optimized on validation only.",
+    "Shared infrastructure or campaigns may cross registrable-domain groups.",
+    "This evaluation does not measure the existing brand-pair model; its metrics are not directly comparable.",
+    "Source composition differs across temporal partitions; inspect per-partition source counts. No independent held-out feed was evaluated.",
+    "Validation has limited positive examples; threshold selection and model ranking can be unstable.",
+    "Malformed domains or DNS values cause whole records to be quarantined, potentially biasing this sample.",
+    "Unknown-DNS missingness indicators have no variation in this sample; live timeouts are out of training support."
+  ],
+  "runtime": {
+    "python": "3.9.6",
+    "sklearn": "1.5.2",
+    "lightgbm": "4.5.0",
+    "seed": 42
+  },
+  "created_at_utc": "2026-10-13T19:29:08.004935+00:00"
+}
