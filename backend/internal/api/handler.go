@@ -19,10 +19,12 @@ const maxRequestBytes = 16 * 1024
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 type Handler struct {
-	dns    DNSService
-	scorer Scorer
-	repo   Repository
-	logger *slog.Logger
+	dnsScorer      DNSScorer
+	dnsPredictions DNSPredictionRepository
+	dns            DNSService
+	scorer         Scorer
+	repo           Repository
+	logger         *slog.Logger
 }
 
 func NewHandler(scorer Scorer, repo Repository, logger *slog.Logger) *Handler {
@@ -39,6 +41,10 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("POST /v1/analyses", h.createAnalysis)
 	mux.HandleFunc("GET /v1/analyses/{id}", h.getAnalysis)
 	if h.dns != nil {
+		if h.dnsScorer != nil && h.dnsPredictions != nil {
+			mux.HandleFunc("POST /v1/domains/{domain}/dns/predictions", h.createDNSPrediction)
+			mux.HandleFunc("GET /v1/domains/{domain}/dns/predictions", h.listDNSPredictions)
+		}
 		mux.HandleFunc("POST /v1/domains/{domain}/dns", h.enrichDNS)
 		mux.HandleFunc("GET /v1/domains/{domain}/dns", h.latestDNS)
 		mux.HandleFunc("GET /v1/domains/{domain}/dns/history", h.dnsHistory)
