@@ -1,0 +1,12 @@
+.git
+.venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+ml/data
+ml/artifacts
+ml/reports/*.json
+ml/reports/*.csv
+ml/reports/*.md
+backend/coverage.out
+backend/profile.out
