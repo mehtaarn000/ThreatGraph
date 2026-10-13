@@ -11,6 +11,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from .brand_inference import load_brand_pair_model, score_brand_pair
+from .dns_api import register_dns_routes
+from .score_dns import load_model as load_dns_model
 
 
 logger = logging.getLogger("threatgraph.ml_service")
@@ -53,6 +55,7 @@ def _valid_web_url(value: str, allow_domain_only: bool = False) -> bool:
 def create_app(
     model_loader: Callable = load_brand_pair_model,
     scorer: Callable = score_brand_pair,
+    dns_model_loader: Callable = load_dns_model,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -62,9 +65,18 @@ def create_app(
         except Exception as exc:
             logger.exception("failed to load brand-pair model")
             raise RuntimeError("brand-pair model failed to load") from exc
+        app.state.dns_model_bundle = None
+        dns_path = os.getenv("THREATGRAPH_DNS_MODEL_PATH")
+        if dns_path:
+            try:
+                app.state.dns_model_bundle = dns_model_loader(Path(dns_path))
+            except Exception as exc:
+                logger.exception("failed to load DNS model")
+                raise RuntimeError("DNS model failed to load") from exc
         yield
 
     app = FastAPI(title="ThreatGraph Model Service", version="0.1.0", lifespan=lifespan)
+    register_dns_routes(app)
 
     @app.get("/healthz")
     def health():

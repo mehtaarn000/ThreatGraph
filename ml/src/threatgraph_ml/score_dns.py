@@ -4,6 +4,8 @@ Load only locally trained, trusted joblib artifacts: pickle can execute code.
 This scorer is separate from the existing brand-pair classifier.
 """
 import argparse
+import hashlib
+from io import BytesIO
 import json
 from pathlib import Path
 
@@ -16,9 +18,11 @@ DEFAULT_MODEL = Path(__file__).resolve().parents[2] / "artifacts/domainradar/sel
 
 
 def load_model(path=DEFAULT_MODEL):
-    bundle = joblib.load(path)
+    artifact = Path(path).read_bytes()
+    bundle = joblib.load(BytesIO(artifact))
     if bundle.get("schema_version") != SCHEMA_VERSION or bundle.get("task") != "generic_domain_phishing":
         raise ValueError("Incompatible DNS model artifact")
+    bundle["model_version"] = hashlib.sha256(artifact).hexdigest()
     return bundle
 
 
