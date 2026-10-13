@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import pytest
 
 from ml.src.threatgraph_ml.zenodo_brand_data import load_brand_pairs
 
@@ -39,13 +40,14 @@ def test_load_brand_pairs_preserves_target_brand_and_weak_negative_provenance(tm
     assert negative["label_source"].startswith("Zenodo non-phishing pool")
 
 
-def test_load_brand_pairs_rejects_invalid_brand_json(tmp_path):
+@pytest.mark.parametrize("invalid", ["not-json", '"acme"', '{"acme": 1}', "null", "[1]", '[["acme"]]'])
+def test_load_brand_pairs_rejects_invalid_brand_json(tmp_path, invalid):
     brands = tmp_path / "brands.csv"
     phishing = tmp_path / "phishing.csv"
     benign = tmp_path / "not-phishing.csv"
     _write_csv(brands, [{"identifier": "acme", "name": "Acme", "website": "https://acme.example"}])
     _write_csv(phishing, [{
-        "_id": "p-1", "domain": "login-acme.test", "url": "", "brands": "not-json", "scan_date": "",
+        "_id": "p-1", "domain": "login-acme.test", "url": "", "brands": invalid, "scan_date": "",
     }])
     _write_csv(benign, [{"_id": "n-1", "domain": "ordinary.example", "url": "", "scan_date": ""}])
 

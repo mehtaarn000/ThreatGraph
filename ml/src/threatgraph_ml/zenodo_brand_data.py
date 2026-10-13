@@ -104,6 +104,10 @@ def load_brand_pairs(phishing_path, benign_path, brands_path, negative_ratio=1.0
             brand_ids = json.loads(row.brands or "[]")
         except (TypeError, json.JSONDecodeError) as exc:
             raise ValueError(f"Invalid brand list for source record {row.source_id}.") from exc
+        if not isinstance(brand_ids, list) or any(
+            not isinstance(brand_id, str) or not brand_id.strip() for brand_id in brand_ids
+        ):
+            raise ValueError(f"Invalid brand list for source record {row.source_id}.")
         for brand_id in sorted(set(brand_ids)):
             brand = catalog.get(brand_id)
             if not brand:
