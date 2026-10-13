@@ -21,6 +21,7 @@ services:
       dockerfile: ml/Dockerfile
     environment:
       THREATGRAPH_BRAND_MODEL_PATH: /app/ml/artifacts/zenodo_brand_pair_baseline.joblib
+      THREATGRAPH_DNS_MODEL_PATH: /app/ml/artifacts/domainradar/selected.joblib
     volumes:
       - ./ml/artifacts:/app/ml/artifacts:ro
     expose:

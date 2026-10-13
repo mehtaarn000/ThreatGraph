@@ -5,6 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY ml/requirements-service.txt /app/ml/requirements-service.txt
 COPY ml/requirements.txt /app/ml/requirements.txt
+COPY ml/requirements-dns.txt /app/ml/requirements-dns.txt
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r /app/ml/requirements-service.txt
 COPY ml/ /app/ml/
 RUN useradd --create-home --uid 10001 appuser && chown -R appuser:appuser /app
