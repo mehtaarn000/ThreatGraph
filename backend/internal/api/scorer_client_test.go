@@ -79,3 +79,14 @@ func TestHTTPScorerRejectsMissingOrInvalidScores(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPScorerRejectsTrailingResponseData(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"impersonation_score":0.5} {}`))
+	}))
+	defer server.Close()
+	scorer, _ := NewHTTPScorer(server.URL, time.Second)
+	if _, err := scorer.Score(context.Background(), CreateAnalysisRequest{}); err == nil {
+		t.Fatal("expected trailing JSON to fail")
+	}
+}

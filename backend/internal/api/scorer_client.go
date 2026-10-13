@@ -77,9 +77,20 @@ func (s *HTTPScorer) do(ctx context.Context, method, path string, body, output a
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return fmt.Errorf("model service returned HTTP %d", response.StatusCode)
 	}
-	decoder := json.NewDecoder(io.LimitReader(response.Body, 1<<20))
+	const maxResponseBytes = 1 << 20
+	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
+	if err != nil {
+		return fmt.Errorf("read model response: %w", err)
+	}
+	if len(data) > maxResponseBytes {
+		return fmt.Errorf("model response exceeds size limit")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(output); err != nil {
 		return fmt.Errorf("decode model response: %w", err)
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return fmt.Errorf("model response must contain exactly one JSON value")
 	}
 	return nil
 }
