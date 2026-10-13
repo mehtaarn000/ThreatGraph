@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: threatgraph
+      POSTGRES_USER: threatgraph
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-threatgraph_dev_only}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U threatgraph -d threatgraph"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  model-service:
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    environment:
+      THREATGRAPH_BRAND_MODEL_PATH: /app/ml/artifacts/zenodo_brand_pair_baseline.joblib
+    volumes:
+      - ./ml/artifacts:/app/ml/artifacts:ro
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://threatgraph:${POSTGRES_PASSWORD:-threatgraph_dev_only}@postgres:5432/threatgraph?sslmode=disable
+      SCORER_URL: http://model-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      model-service:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  postgres_data:
