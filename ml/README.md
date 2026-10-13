@@ -1,5 +1,10 @@
 # ThreatGraph ML pipeline (initial slice)
 
+For the separate DNS-enriched DomainRadar experiment, acquisition commands,
+model comparisons, and scoring of Go DNS snapshots, see
+[the DNS model guide](docs/domainradar.md). It uses 29 lexical/DNS features and
+does not replace the existing brand classifier.
+
 This is the first reproducible ML pipeline for ThreatGraph. It uses the UCI
 PhiUSIIL Phishing URL (Website) dataset to train a **generic phishing URL
 classifier**. Its labels do not identify which brand is being impersonated, so
