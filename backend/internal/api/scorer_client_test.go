@@ -26,7 +26,7 @@ func TestHTTPScorerPostsRequestAndDecodesScore(t *testing.T) {
 			t.Errorf("unexpected request body: %+v", body)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(ScoreResult{ImpersonationScore: 0.73, BrandName: "Acme"})
+		_ = json.NewEncoder(w).Encode(ScoreResult{ImpersonationScore: 0.73, BrandName: body.BrandName, CandidateURL: body.CandidateURL, BrandDomain: body.BrandDomain})
 	}))
 	defer server.Close()
 
@@ -62,5 +62,20 @@ func TestHTTPScorerRejectsInvalidConfigurationAndUpstreamErrors(t *testing.T) {
 	}
 	if _, err := scorer.Score(context.Background(), CreateAnalysisRequest{}); err == nil {
 		t.Fatal("expected upstream error to be surfaced")
+	}
+}
+
+func TestHTTPScorerRejectsMissingOrInvalidScores(t *testing.T) {
+	for _, body := range []string{`{}`, `{"impersonation_score":null}`, `{"impersonation_score":2}`, `{"impersonation_score":0.5,"brand_name":"Wrong"}`} {
+		t.Run(body, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+			scorer, _ := NewHTTPScorer(server.URL, time.Second)
+			if _, err := scorer.Score(context.Background(), CreateAnalysisRequest{}); err == nil {
+				t.Fatal("expected invalid model response to fail")
+			}
+		})
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,9 +30,20 @@ func NewHTTPScorer(baseURL string, timeout time.Duration) (*HTTPScorer, error) {
 }
 
 func (s *HTTPScorer) Score(ctx context.Context, request CreateAnalysisRequest) (ScoreResult, error) {
-	var result ScoreResult
-	if err := s.do(ctx, http.MethodPost, "/v1/score", request, &result); err != nil {
+	var payload struct {
+		ScoreResult
+		Score *float64 `json:"impersonation_score"`
+	}
+	if err := s.do(ctx, http.MethodPost, "/v1/score", request, &payload); err != nil {
 		return ScoreResult{}, err
+	}
+	if payload.Score == nil || math.IsNaN(*payload.Score) || math.IsInf(*payload.Score, 0) || *payload.Score < 0 || *payload.Score > 1 {
+		return ScoreResult{}, fmt.Errorf("model response has an invalid or missing score")
+	}
+	result := payload.ScoreResult
+	result.ImpersonationScore = *payload.Score
+	if result.CandidateURL != request.CandidateURL || result.BrandName != request.BrandName || result.BrandDomain != request.BrandDomain {
+		return ScoreResult{}, fmt.Errorf("model response does not match the requested pair")
 	}
 	return result, nil
 }
