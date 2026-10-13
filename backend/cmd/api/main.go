@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"threatgraph/backend/internal/api"
+	"threatgraph/backend/internal/enrichment"
 	"threatgraph/backend/internal/store"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -63,9 +64,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	dnsService, err := enrichment.ConfiguredService(repository, os.Getenv)
+	if err != nil {
+		logger.Error("invalid DNS configuration", "error", err)
+		os.Exit(1)
+	}
+
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           api.NewHandler(scorer, repository, logger).Routes(),
+		Handler:           api.NewHandler(scorer, repository, logger).WithDNS(dnsService).Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

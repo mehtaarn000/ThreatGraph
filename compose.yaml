@@ -39,6 +39,10 @@ services:
       PORT: "8080"
       DATABASE_URL: postgres://threatgraph:${POSTGRES_PASSWORD:-threatgraph_dev_only}@postgres:5432/threatgraph?sslmode=disable
       SCORER_URL: http://model-service:8000
+      DNS_SERVER: ${DNS_SERVER:-}
+      DNS_LOOKUP_TIMEOUT: ${DNS_LOOKUP_TIMEOUT:-2s}
+      DNS_CACHE_TTL: ${DNS_CACHE_TTL:-5m}
+      DNS_NEGATIVE_CACHE_TTL: ${DNS_NEGATIVE_CACHE_TTL:-30s}
     depends_on:
       postgres:
         condition: service_healthy
