@@ -1,6 +1,7 @@
 """Train an exploratory brand-pair baseline from the Zenodo public dataset."""
 
 import json
+import hashlib
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +17,7 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from .brand_features import extract_brand_features
+from .brand_features import NEW_FEATURE_NAMES, extract_brand_features
 from .metrics import precision_at_budget
 from .zenodo_brand_data import download_dataset, load_brand_pairs
 
@@ -57,20 +58,40 @@ def main():
     if train_idx is None:
         raise RuntimeError("Could not find a domain-grouped split containing both classes.")
 
-    model = make_pipeline(
-        SimpleImputer(strategy="median"),
-        StandardScaler(),
-        LogisticRegression(class_weight="balanced", max_iter=2000, random_state=RANDOM_STATE),
-    )
-    model.fit(X.iloc[train_idx], y[train_idx])
-    scores = model.predict_proba(X.iloc[test_idx])[:, 1]
-    metrics = _score_metrics(y[test_idx], scores)
+    # All variants use exactly the same records, holdout, and model settings.
+    original = [name for name in X.columns if name not in NEW_FEATURE_NAMES]
+    variants = {
+        "original_20": original,
+        "with_entropy": original + [NEW_FEATURE_NAMES[0]],
+        "with_domain_similarity": original + list(NEW_FEATURE_NAMES[1:]),
+        "combined_23": original + list(NEW_FEATURE_NAMES),
+    }
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    comparisons = {}
+    for name, columns in variants.items():
+        model = make_pipeline(
+            SimpleImputer(strategy="median"),
+            StandardScaler(),
+            LogisticRegression(class_weight="balanced", max_iter=2000, random_state=RANDOM_STATE),
+        )
+        model.fit(X.iloc[train_idx][columns], y[train_idx])
+        scores = model.predict_proba(X.iloc[test_idx][columns])[:, 1]
+        comparisons[name] = _score_metrics(y[test_idx], scores)
+        joblib.dump(
+            {"model": model, "feature_names": columns, "feature_schema_version": 2},
+            ARTIFACT_DIR / f"zenodo_brand_pair_{name}.joblib",
+        )
+        if name == "original_20":
+            # Preserve the existing training command and serving artifact contract.
+            joblib.dump(
+                {"model": model, "feature_names": columns},
+                ARTIFACT_DIR / "zenodo_brand_pair_baseline.joblib",
+            )
+    metrics = dict(comparisons["original_20"])
     rule_scores = X.iloc[test_idx]["brand_token_present"].to_numpy(dtype=float)
     metrics["brand_token_rule_baseline"] = _score_metrics(y[test_idx], rule_scores)
 
-    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": model, "feature_names": list(X.columns)}, ARTIFACT_DIR / "zenodo_brand_pair_baseline.joblib")
     manifest = {
         "task": "exploratory_brand_impersonation_pair_classification",
         "dataset": "Zenodo Phishing Website Dataset, record 8041387",
@@ -91,6 +112,13 @@ def main():
         "scikit_learn_version": sklearn.__version__,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "metrics": metrics,
+        "feature_comparison": comparisons,
+        "feature_sets": variants,
+        "evaluation_note": "Exploratory fixed holdout comparison, not an independent final test or evidence of calibrated production accuracy. No automatic model promotion.",
+        "test_indices_sha256": hashlib.sha256(test_idx.astype("<i8").tobytes()).hexdigest(),
+        "dataset_sha256": {
+            name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in files.items()
+        },
     }
     with (REPORT_DIR / "zenodo_brand_pair_metrics.json").open("w") as handle:
         json.dump(manifest, handle, indent=2)

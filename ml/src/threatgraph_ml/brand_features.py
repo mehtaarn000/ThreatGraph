@@ -1,5 +1,7 @@
 """Brand-relative lexical features for a candidate domain–brand pair."""
 
+from collections import Counter
+import math
 import ipaddress
 import re
 import unicodedata
@@ -8,6 +10,26 @@ from urllib.parse import urlsplit
 
 TOKEN_RE = re.compile(r"[^\W_]+", flags=re.UNICODE)
 WWW_LABELS = {"www", "www2", "www3"}
+NEW_FEATURE_NAMES = (
+    "host_shannon_entropy",
+    "official_domain_edit_similarity",
+    "official_domain_bigram_dice",
+)
+
+
+def _comparison_host(value):
+    # Decode IDNA and strip only a leading www; retain all other labels.
+    host = unicodedata.normalize("NFC", _idna_unicode(_hostname(value))).casefold()
+    return host[4:] if host.startswith("www.") else host
+
+
+def _shannon_entropy(text):
+    """Empirical character entropy in bits; repeated/empty strings have zero."""
+    if not text:
+        return 0.0
+    return -sum((count / len(text)) * math.log2(count / len(text))
+                for count in Counter(text).values())
+
 
 
 def _hostname(value: str) -> str:
@@ -111,7 +133,19 @@ def extract_brand_features(candidate_url: str, brand_name: str, brand_domain: st
     path_tokens = set(_tokens(parsed.path or ""))
     non_ascii_count = sum(ord(char) > 127 for char in unicode_host)
 
+    candidate_comparison = _comparison_host(candidate_url)
+    official_comparison = _comparison_host(brand_domain)
+    comparable = bool(candidate_comparison and official_comparison)
     return {
+        # Entropy excludes dots, but retains hyphens and digits. It describes
+        # character frequencies, not character order or malicious intent.
+        "host_shannon_entropy": _shannon_entropy(candidate_comparison.replace(".", "")),
+        "official_domain_edit_similarity": (
+            _edit_similarity(candidate_comparison, official_comparison) if comparable else 0.0
+        ),
+        "official_domain_bigram_dice": (
+            _bigram_dice(candidate_comparison, official_comparison) if comparable else 0.0
+        ),
         "brand_token_count": len(brand_tokens),
         "host_label_count": len(host_labels),
         "host_length": len(host),

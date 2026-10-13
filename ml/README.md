@@ -115,3 +115,43 @@ The application should load the model once at process startup, then call this
 function from its inference service. Before treating scores as alert thresholds,
 replace weak negatives with reviewed domain–brand labels, calibrate on a
 separate validation set, and choose thresholds against an analyst alert budget.
+
+
+### Entropy and official-domain feature comparison
+
+Run `python -m ml.src.threatgraph_ml.train_brand_baseline` to compare four
+logistic models on the same domain-grouped holdout: the original 20 features,
+entropy alone added, official-domain similarity alone added, and all 23 features.
+All models use identical preprocessing and classifier settings. The report records
+feature lists, dataset hashes, the holdout index hash, and each variant's metrics.
+
+New features:
+- `host_shannon_entropy`: empirical Shannon character entropy in bits, excluding
+  dots and a leading www. Retains digits and hyphens. Character order does not
+  affect this value; high entropy alone does not imply malicious intent.
+- `official_domain_edit_similarity`: normalized Levenshtein similarity of the
+  complete candidate and official hostnames.
+- `official_domain_bigram_dice`: overlap between sets of adjacent character pairs
+  in those hostnames.
+
+These new comparisons normalize case, trailing dots, IDNA Unicode spelling and
+leading www. They retain other subdomains and suffixes, ignore URL paths/queries,
+and do not infer registrable domains or visual confusables. Missing hosts yield
+zero similarity.
+
+Artifacts are saved separately as `zenodo_brand_pair_<variant>.joblib`.
+The existing `zenodo_brand_pair_baseline.joblib` remains the original 20-feature
+model. To serve the expanded model locally, set
+`THREATGRAPH_BRAND_MODEL_PATH=ml/artifacts/zenodo_brand_pair_combined_23.joblib`
+when starting the Python service from the repository root. In Compose, change
+the model service's artifact path to
+`/app/ml/artifacts/zenodo_brand_pair_combined_23.joblib`, then recreate that service.
+
+The initial comparison used 8,204 training pairs and 2,048 held-out pairs.
+Average precision rose from 0.870135 to 0.871246 with all three new features.
+At threshold 0.5, precision changed from 0.824601 to 0.814732 and recall from
+0.706341 to 0.712195. All four models achieved precision 1.0 in the top 21
+alerts on this particular holdout. These small, mixed differences do not establish
+a reliable improvement. Labels include weak negative proxies; the holdout is
+historical, non-temporal, and already used for exploratory comparison. Use a fresh
+evaluation set before making performance claims or choosing deployment thresholds.
