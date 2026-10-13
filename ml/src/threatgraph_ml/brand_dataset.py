@@ -51,6 +51,10 @@ def load_reviewed_labels(path):
             raise ValueError(f"Required field '{column}' contains an empty value.")
 
     frame["candidate_domain"] = frame["candidate_domain"].map(_normalize_domain)
+    frame["candidate_url"] = frame["candidate_url"].str.strip()
+    for row in frame.itertuples(index=False):
+        if row.candidate_url and _normalize_domain(row.candidate_url) != row.candidate_domain:
+            raise ValueError("candidate_url hostname must match candidate_domain.")
     frame["brand_id"] = frame["brand_id"].str.strip()
     if frame.duplicated(["example_id"]).any():
         raise ValueError("example_id must be unique.")

@@ -79,3 +79,12 @@ def test_build_training_table_requires_confirmed_examples(tmp_path):
 
     with pytest.raises(ValueError, match="No confirmed domain–brand labels"):
         build_training_table(load_reviewed_labels(path))
+
+
+def test_rejects_url_that_disagrees_with_split_domain(tmp_path):
+    path = _write_labels(tmp_path / "labels.csv", [
+        _row("a", "group.example", "confirmed_impersonation",
+             candidate_url="https://different.example/login"),
+    ])
+    with pytest.raises(ValueError, match="hostname must match"):
+        load_reviewed_labels(path)
