@@ -58,3 +58,22 @@ def test_api_restart_preserves_records_and_reapplies_migration_safely(stack):
     assert second.json()["id"] != created["id"]
     assert stack.sql("SELECT count(*) FROM analyses") == "2"
 
+
+def test_all_services_restart_with_durable_data_and_loaded_model(stack):
+    response = stack.create()
+    assert response.status_code == 201, response.text
+    created = response.json()
+    for name in ("api", "model", "postgres"):
+        stack.stop(name)
+    stack.start_postgres()
+    stack.start_model()
+    stack.start_api()
+    retrieved = stack.get("/v1/analyses/" + created["id"])
+    assert retrieved.status_code == 200, retrieved.text
+    assert retrieved.json() == created
+    after_restart = stack.create()
+    assert after_restart.status_code == 201, after_restart.text
+    assert after_restart.json()["result"] == created["result"]
+    assert after_restart.json()["id"] != created["id"]
+    assert stack.sql("SELECT count(*) FROM analyses") == "2"
+
