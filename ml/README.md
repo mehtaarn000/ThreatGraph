@@ -54,3 +54,9 @@ Add a reviewed `domain-brand` dataset with labels `confirmed_impersonation`,
 `confirmed_not_impersonation`, and `unknown`. Only the first two should enter a
 binary training run. Preserve source provenance and timestamps, then use a
 campaign-aware and time-based holdout before claiming brand-risk performance.
+
+The first domain–brand label contract and lexical feature extractor are now in
+`ml/docs/brand-labeling.md`, `ml/templates/domain_brand_labels.csv`, and
+`ml/src/threatgraph_ml/brand_features.py`. `brand_dataset.py` validates reviewed
+labels and builds a feature table; a brand-specific model is intentionally not
+trained until reviewed examples exist.
