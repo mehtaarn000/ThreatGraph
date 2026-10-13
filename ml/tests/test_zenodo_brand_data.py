@@ -25,6 +25,12 @@ def test_load_brand_pairs_preserves_target_brand_and_weak_negative_provenance(tm
 
     pairs = load_brand_pairs(phishing, benign, brands)
 
+    for path in (phishing, benign):
+        frame = pd.read_csv(path)
+        frame[list(reversed(frame.columns))].to_csv(path, index=False)
+    reordered = load_brand_pairs(phishing, benign, brands)
+    pd.testing.assert_frame_equal(pairs, reordered)
+
     assert pairs["target"].tolist() == [1, 0]
     positive, negative = pairs.to_dict("records")
     assert positive["brand_id"] == negative["brand_id"] == "acme"

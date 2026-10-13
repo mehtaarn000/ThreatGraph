@@ -96,14 +96,14 @@ def load_brand_pairs(phishing_path, benign_path, brands_path, negative_ratio=1.0
         keep_default_na=False,
     )
     positives = []
-    for row in positive_frame.itertuples(index=False):
+    for row in positive_frame.rename(columns={"_id": "source_id"}).itertuples(index=False):
         domain = _as_text(row.domain).casefold().rstrip(".")
         if not domain:
             continue
         try:
             brand_ids = json.loads(row.brands or "[]")
         except (TypeError, json.JSONDecodeError) as exc:
-            raise ValueError(f"Invalid brand list for source record {row._0}.") from exc
+            raise ValueError(f"Invalid brand list for source record {row.source_id}.") from exc
         for brand_id in sorted(set(brand_ids)):
             brand = catalog.get(brand_id)
             if not brand:
@@ -116,7 +116,7 @@ def load_brand_pairs(phishing_path, benign_path, brands_path, negative_ratio=1.0
                 "target": 1,
                 "label_source": "Zenodo phishing record with declared target brand",
                 "label_quality": "source_labeled_positive",
-                "source_record_id": _as_text(row._0),
+                "source_record_id": _as_text(row.source_id),
                 "observed_at": _as_text(row.scan_date),
             })
     if not positives:
@@ -145,7 +145,7 @@ def load_brand_pairs(phishing_path, benign_path, brands_path, negative_ratio=1.0
     probabilities = (brand_counts / brand_counts.sum()).to_numpy()
     assigned_brands = rng.choice(brand_ids, size=requested, p=probabilities)
     negatives = []
-    for row, brand_id in zip(sampled.itertuples(index=False), assigned_brands):
+    for row, brand_id in zip(sampled.rename(columns={"_id": "source_id"}).itertuples(index=False), assigned_brands):
         negatives.append({
             "candidate_domain": row.domain,
             "candidate_url": _as_text(row.url) or row.domain,
@@ -154,7 +154,7 @@ def load_brand_pairs(phishing_path, benign_path, brands_path, negative_ratio=1.0
             "target": 0,
             "label_source": "Zenodo non-phishing pool; brand paired by seeded sampling",
             "label_quality": "weak_benign_proxy",
-            "source_record_id": _as_text(row._0),
+            "source_record_id": _as_text(row.source_id),
             "observed_at": _as_text(row.scan_date),
         })
     return pd.concat([positive_frame, pd.DataFrame.from_records(negatives)], ignore_index=True)
