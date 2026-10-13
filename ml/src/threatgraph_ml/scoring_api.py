@@ -17,7 +17,7 @@ logger = logging.getLogger("threatgraph.ml_service")
 
 
 class ScoreRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     candidate_url: str = Field(min_length=1, max_length=4096)
     brand_name: str = Field(min_length=1, max_length=200)

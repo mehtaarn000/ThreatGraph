@@ -50,3 +50,13 @@ def test_scoring_api_rejects_invalid_urls_and_unknown_fields():
             "fetch": True,
         })
         assert unknown_field.status_code == 422
+
+
+def test_scoring_rejects_blank_brand_names_after_trimming():
+    with TestClient(_app()) as client:
+        response = client.post("/v1/score", json={
+            "candidate_url": "https://candidate.example",
+            "brand_name": "   ",
+            "brand_domain": "acme.example",
+        })
+        assert response.status_code == 422
